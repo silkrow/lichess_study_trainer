@@ -1,5 +1,7 @@
 import requests
 import re
+import chess.pgn
+import io
 
 class Study:
     def __init__(self, personal_token=None):
@@ -31,14 +33,22 @@ class Study:
             # Split the raw PGN into individual games
             pgn_games = re.split(r'\n\n\n', raw_pgn)[:-1]
             pgn_info = []
-            pgn_move = []
+            pgn_moves = []
             for pgn_game in pgn_games:
                 temp = pgn_game.split('\n\n')
                 pgn_info.append(temp[0])
-                pgn_move.append(temp[-1])
-            return pgn_info, pgn_move
+                pgn_moves.append(temp[-1])
+            return pgn_info, pgn_moves
         else:
             return None, f"Failed to retrieve PGN for study {study_id}. Status Code: {response.status_code}"
+
+    def display_board(self, pgn):
+        game = chess.pgn.read_game(io.StringIO(pgn))
+        if game:
+            board = game.board()
+            return board
+        else:
+            return None
 
 # Example usage:
 study = Study()  # Initialize without a token
@@ -52,10 +62,17 @@ study_list_result = study.list_studies(valid_username)
 print(study_list_result)
 
 valid_study_id = input("Enter a valid study ID: ")
-info_parts, raw_pgn = study.get_study_pgn(valid_study_id)
+info_parts, pgn_moves = study.get_study_pgn(valid_study_id)
 
 print("Information Parts:")
 print(info_parts)
-print("\nRaw PGN:")
-print(raw_pgn)
+print("\nPGN Moves:")
+print(pgn_moves)
+
+# Analyze and display the board for the first game in the study
+if pgn_moves:
+    board = study.display_board(pgn_moves[0])
+    print("\nBoard Position:")
+    if board:
+        print(board)
 
