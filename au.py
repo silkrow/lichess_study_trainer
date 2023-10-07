@@ -1,4 +1,5 @@
 import requests
+import re
 
 class Study:
     def __init__(self, personal_token=None):
@@ -17,19 +18,24 @@ class Study:
         response = requests.get(studies_url, headers=self.headers)
 
         if response.status_code == 200:
-            print(response.text)  # Print the response content
+            return response.text
         else:
-            print(f"Failed to list studies. Status Code: {response.status_code}")
+            return f"Failed to list studies. Status Code: {response.status_code}"
 
     def get_study_pgn(self, study_id):
         study_url = f"{self.base_url}study/{study_id}.pgn"
         response = requests.get(study_url, headers=self.headers)
 
         if response.status_code == 200:
-            return response.text
+            raw_pgn = response.text
+            # Split the raw PGN into individual games
+            pgn_games = re.split(r'\n\n\n', raw_pgn)
+            pgn_info = []
+            for pgn_game in pgn_games:
+                pgn_info.append(re.split(r'\n\n', pgn_game)[0])
+            return pgn_info, raw_pgn
         else:
-            print(f"Failed to retrieve PGN for study {study_id}. Status Code: {response.status_code}")
-            return None
+            return None, f"Failed to retrieve PGN for study {study_id}. Status Code: {response.status_code}"
 
 # Example usage:
 study = Study()  # Initialize without a token
@@ -37,9 +43,16 @@ study = Study()  # Initialize without a token
 personal_token = "lip_EOEhmhXG2MsPWuBiDFI7"
 study.set_personal_token(personal_token)
 
-valid_username = "failedtofindaname"
-study.list_studies(valid_username)
+# Ask the user for inputs interactively
+valid_username = input("Enter a valid Lichess username: ")
+study_list_result = study.list_studies(valid_username)
+print(study_list_result)
 
-valid_study_id = "OS94SFrY"
-pgn = study.get_study_pgn(valid_study_id)
-print(pgn)
+valid_study_id = input("Enter a valid study ID: ")
+info_parts, raw_pgn = study.get_study_pgn(valid_study_id)
+
+print("Information Parts:")
+print(info_parts)
+print("\nRaw PGN:")
+print(raw_pgn)
+
