@@ -29,11 +29,14 @@ class Study:
         if response.status_code == 200:
             raw_pgn = response.text
             # Split the raw PGN into individual games
-            pgn_games = re.split(r'\n\n\n', raw_pgn)
+            pgn_games = re.split(r'\n\n\n', raw_pgn)[:-1]
             pgn_info = []
+            pgn_move = []
             for pgn_game in pgn_games:
-                pgn_info.append(re.split(r'\n\n', pgn_game)[0])
-            return pgn_info, raw_pgn
+                temp = pgn_game.split('\n\n')
+                pgn_info.append(temp[0])
+                pgn_move.append(temp[-1])
+            return pgn_info, pgn_move
         else:
             return None, f"Failed to retrieve PGN for study {study_id}. Status Code: {response.status_code}"
 
