@@ -4,6 +4,14 @@ import chess.pgn
 import io
 
 class Study:
+    '''
+    Class: Study
+    Attributes: 
+        personal_token      : string, to access private studies
+        study_id            : string, the study that is currently being worked on
+        study_game          : Game, the game that is currently being worked on   
+    '''
+
     def __init__(self, personal_token=None):
         self.base_url = "https://lichess.org/api/"
         self.headers = {
@@ -42,11 +50,21 @@ class Study:
         else:
             return None, f"Failed to retrieve PGN for study {study_id}. Status Code: {response.status_code}"
 
-    def display_board(self, pgn):
+    def display_lines(self, pgn):
         game = chess.pgn.read_game(io.StringIO(pgn))
         if game:
             board = game.board()
-            return board
+            print('Mainline')
+            for move in game.mainline_moves():
+                board.push(move)
+                print(board)
+                print()
+            print('Sidelines')
+            side_cnt = 0
+            for sideline in game.variations:
+                side_cnt = side_cnt + 1
+                print(f'sideline {side_cnt}')
+                print(sideline)
         else:
             return None
 
@@ -71,8 +89,4 @@ print(pgn_moves)
 
 # Analyze and display the board for the first game in the study
 if pgn_moves:
-    board = study.display_board(pgn_moves[0])
-    print("\nBoard Position:")
-    if board:
-        print(board)
-
+    board = study.display_lines(pgn_moves[0])
