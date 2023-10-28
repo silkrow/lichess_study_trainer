@@ -9,7 +9,7 @@ class Study:
     Attributes: 
         personal_token      : string, to access private studies
         study_id            : string, the study that is currently being worked on
-        study_game          : Game, the game that is currently being worked on   
+        study_game          : chess.pgn.Game, the game that is currently being worked on   
     '''
 
     def __init__(self, personal_token=None):
@@ -19,6 +19,9 @@ class Study:
         }
         if personal_token:
             self.set_personal_token(personal_token)
+
+        self.study_id = ""
+        self.study_game = None
 
     def set_personal_token(self, personal_token):
         self.headers["Authorization"] = f"Bearer {personal_token}"
