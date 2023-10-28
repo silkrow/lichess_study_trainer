@@ -2,13 +2,17 @@ import requests
 import re
 import chess.pgn
 import io
+import json
+
+from study import Study
 
 class Trainer:
     '''
     Class: Trainer
     Attributes: 
         personal_token      : string, to access private studies
-        study_id            : string, the study that is currently being worked on
+        studies             : list of Study objects, candidates for training
+        study               : Study object, the study that is being worked on
         study_game          : chess.pgn.Game, the game that is currently being worked on   
     '''
 
@@ -20,17 +24,30 @@ class Trainer:
         if personal_token:
             self.set_personal_token(personal_token)
 
-        self.study_id = ""
+        self.studies = []
+        self.study = None
         self.study_game = None
 
     def set_personal_token(self, personal_token):
         self.headers["Authorization"] = f"Bearer {personal_token}"
 
-    def list_studies(self, username):
+    def fetch_studies(self, username):
+        '''
+        This function will fetch all the studies owned by a user, and append the Study objects
+        to the self.studies list. But the Study objects will only be initiated with study id, 
+        study name, and author info, no pgn fetch will be done. 
+        '''
         studies_url = f"{self.base_url}study/by/{username}"
         response = requests.get(studies_url, headers=self.headers)
-
         if response.status_code == 200:
+            json_objects = response.text.strip().split("\n")
+            ids = [json.loads(obj)["id"] for obj in json_objects]
+            names = [json.loads(obj)["name"] for obj in json_objects]
+
+            for i in range(len(ids)):
+                new_study = Study(ids[i], username, names[i])
+                self.studies.append(new_study)
+
             return response.text
         else:
             return f"Failed to list studies. Status Code: {response.status_code}"

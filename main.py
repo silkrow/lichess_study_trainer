@@ -9,7 +9,7 @@ with open("lichess_token.txt", "r") as file:
 
 # Ask the user for inputs interactively
 valid_username = input("Enter a valid Lichess username: ")
-study_list_result = study.list_studies(valid_username)
+study_list_result = study.fetch_studies(valid_username)
 print(study_list_result)
 
 valid_study_id = input("Enter a valid study ID: ")
