@@ -3,8 +3,11 @@ from trainer import Trainer
 # Example usage:
 study = Trainer()  # Initialize without a token
 # Authenticate later using a personal access token
-personal_token = "lip_EOEhmhXG2MsPWuBiDFI7"
-study.set_personal_token(personal_token)
+with open("lichess_token.txt", "r") as file:
+    token = file.read()
+    study.set_personal_token(token)
+#personal_token = "lip_EOEhmhXG2MsPWuBiDFI7"
+
 
 # Ask the user for inputs interactively
 valid_username = input("Enter a valid Lichess username: ")
