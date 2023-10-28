@@ -6,8 +6,6 @@ study = Trainer()  # Initialize without a token
 with open("lichess_token.txt", "r") as file:
     token = file.read()
     study.set_personal_token(token)
-#personal_token = "lip_EOEhmhXG2MsPWuBiDFI7"
-
 
 # Ask the user for inputs interactively
 valid_username = input("Enter a valid Lichess username: ")
