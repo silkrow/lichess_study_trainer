@@ -5,6 +5,7 @@ import io
 import json
 
 from study import Study
+from chapter import Chapter
 
 class Trainer:
     '''
@@ -36,6 +37,8 @@ class Trainer:
         This function will fetch all the studies owned by a user, and append the Study objects
         to the self.studies list. But the Study objects will only be initiated with study id, 
         study name, and author info, no pgn fetch will be done. 
+        Return the number of studies loaded. 
+        Return None on failure.
         '''
         studies_url = f"{self.base_url}study/by/{username}"
         response = requests.get(studies_url, headers=self.headers)
@@ -48,27 +51,43 @@ class Trainer:
                 new_study = Study(ids[i], username, names[i])
                 self.studies.append(new_study)
 
-            return response.text
-        else:
-            return f"Failed to list studies. Status Code: {response.status_code}"
+            return len(ids)
+        else: # Error in fetching studies of the user
+            return None
 
-    def get_study_pgn(self, study_id):
-        study_url = f"{self.base_url}study/{study_id}.pgn"
-        response = requests.get(study_url, headers=self.headers)
+    def update_study(self, study_id):
+        '''
+        Update a Study object in self.studies list, fill in its chapters array, initialize each
+        Chapter object in it with the pgn.
+        Return the number of chapters loaded.
+        Return None on failure.
+        '''
+        for study_i in self.studies:
+            if study_i.get_id() == study_id:
+                study_url = f"{self.base_url}study/{study_id}.pgn"
+                response = requests.get(study_url, headers=self.headers)
 
-        if response.status_code == 200:
-            raw_pgn = response.text
-            # Split the raw PGN into individual games
-            pgn_games = re.split(r'\n\n\n', raw_pgn)[:-1]
-            pgn_info = []
-            pgn_moves = []
-            for pgn_game in pgn_games:
-                temp = pgn_game.split('\n\n')
-                pgn_info.append(temp[0])
-                pgn_moves.append(temp[-1])
-            return pgn_info, pgn_moves
-        else:
-            return None, f"Failed to retrieve PGN for study {study_id}. Status Code: {response.status_code}"
+                if response.status_code == 200:
+                    raw_pgn = response.text
+                    # Split the raw PGN into individual games
+                    pgn_games = re.split(r'\n\n\n', raw_pgn)[:-1]
+                    # pgn_info = []
+                    # pgn_moves = []
+                    # for pgn_game in pgn_games:
+                    #     temp = pgn_game.split('\n\n')
+                    #     pgn_info.append(temp[0])
+                    #     pgn_moves.append(temp[-1])
+                    # return pgn_info, pgn_moves
+
+                    study_i.clear_chapters()
+                    for pgn_i in pgn_games:
+                        new_chapter = Chapter(pgn_i)
+                        study_i.add_chapter(new_chapter)
+
+                    return study_i.total_chapters()
+
+                else:
+                    return None
 
     def display_lines(self, pgn):
         game = chess.pgn.read_game(io.StringIO(pgn))
