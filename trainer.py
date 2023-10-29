@@ -13,7 +13,9 @@ class Trainer:
     Attributes: 
         personal_token      : string, to access private studies
         studies             : list of Study objects, candidates for training
-        study               : Study object, the study that is being worked on
+        study_ind           : dictionary, mappings between study name and index in studies
+        crnt_study          : Study object, the study that is being worked on
+        chapters_set        : set, a set containing all the chapters in crnt_study that hasn't been worked on
         study_game          : chess.pgn.Game, the game that is currently being worked on   
     '''
 
@@ -26,8 +28,10 @@ class Trainer:
             self.set_personal_token(personal_token)
 
         self.studies = []
-        self.study = None
+        self.study_ind = {}
+        self.crnt_study = None
         self.study_game = None
+        self.chapters_set = set()
 
     def set_personal_token(self, personal_token):
         self.headers["Authorization"] = f"Bearer {personal_token}"
@@ -49,19 +53,37 @@ class Trainer:
 
             for i in range(len(ids)):
                 new_study = Study(ids[i], username, names[i])
+                index = len(self.studies)
+                self.study_ind[names[i]] = index # Mapping of name -> index
                 self.studies.append(new_study)
+                self.studies[-1].assign_index(index)
 
             return len(ids)
         else: # Error in fetching studies of the user
             return None
 
-    def update_study(self, study_id):
+    def get_study_index(self, name):
+        '''
+        Return an index in self.studies at where the study with this name
+        is stored.
+        Return None if no study with such name exists.
+        '''
+        return self.study_ind.get(name)
+
+    def update_study(self, name):
         '''
         Update a Study object in self.studies list, fill in its chapters array, initialize each
         Chapter object in it with the pgn.
         Return the number of chapters loaded.
         Return None on failure.
         '''
+        index = self.get_study_index(name)
+
+        if index == None:
+            return None
+
+        study_id = self.studies[index].get_id()
+
         for study_i in self.studies:
             if study_i.get_id() == study_id:
                 study_url = f"{self.base_url}study/{study_id}.pgn"
@@ -81,13 +103,44 @@ class Trainer:
 
                     study_i.clear_chapters()
                     for pgn_i in pgn_games:
-                        new_chapter = Chapter(pgn_i)
+                        pattern = r'\[Event "(.*?)"\]'
+                        match = re.search(pattern, pgn_i)
+                        if match:
+                            event_name = match.group(1)
+                            new_chapter = Chapter(pgn_i, event_name)
+                        else:
+                            new_chapter = Chapter(pgn_i, "Unknown")
                         study_i.add_chapter(new_chapter)
 
                     return study_i.total_chapters()
 
                 else:
                     return None
+
+    def list_study_names(self):
+        names = []
+        for study_i in self.studies:
+            names.append(study_i.get_name())
+
+        return names
+
+    def set_crnt_study(self, name):
+        '''
+        Set the current study by its name, update self.crnt_study.
+        Return the index of this study in self.studies.
+        Return None if this study doesn't exist.
+        '''
+        index = self.get_study_index(name)
+        if index == None:
+            return None
+
+        self.update_study(name) # Update the study here before setting it to crnt
+
+        self.crnt_study = self.studies[index]
+        for chapter_i in self.crnt_study.get_chapters():
+            self.chapters_set.add(chapter_i)
+            print(chapter_i.get_name())
+        return index
 
     def display_lines(self, pgn):
         game = chess.pgn.read_game(io.StringIO(pgn))

@@ -5,6 +5,7 @@ class Study:
 	Class: Study
 	Attributes:
 		chapters		: list of Chapter objects
+		index			: int, the index of this study in Trainer.studies list
 		name			: string, name of the study
 		id				: string, study_id for api calls
 		author			: string, author of this study
@@ -17,6 +18,7 @@ class Study:
 		self.chapters = []
 		self.author = author
 		self.name = name
+		self.index = None
 
 	def get_id(self):
 		return self.id
@@ -30,5 +32,14 @@ class Study:
 	def total_chapters(self):
 		return len(self.chapters)
 
+	def get_chapters(self):
+		return self.chapters
+
 	def clear_chapters(self):
 		self.chapters = []
+
+	def assign_index(self, index):
+		self.index = index
+
+	def get_index(self):
+		return self.index
