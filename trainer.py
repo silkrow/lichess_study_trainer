@@ -17,9 +17,14 @@ class Trainer:
         study_ind           : dictionary, mappings between study name and index in studies
         crnt_study          : Study object, the study that is being worked on
         chapters_set        : set, a set containing all the chapters in crnt_study that hasn't been worked on
-        side                : int, the side to train on. 0 = black, 1 = white
+        side                : int, the side to train on. 0 = white, 1 = black
         study_game          : chess.pgn.Game, the game that is currently being worked on 
         training_line       : list of moves, the line that is being worked on
+        move_index          : int, the index of the move in training_line that is being worked on
+        total_moves         : int, total number of moves made 
+        total_correct       : int, number of correct moves made
+        move_accuracy       : float, ratio of total_correct/total_moves
+        training_board      : Board, the current board that is being worked on
     '''
 
     def __init__(self, personal_token=None):
@@ -33,10 +38,16 @@ class Trainer:
         self.studies = []
         self.study_ind = {}
         self.crnt_study = None
+        # Clean up whenever a new crnt_study is set 
         self.study_game = None
         self.chapters_set = set()
-        self.side = 1
+        self.side = 0
         self.training_line = []
+        self.move_index = 0
+        self.total_moves = 0
+        self.total_correct = 0
+        self.move_accuracy = 0.0
+        self.training_board = chess.Board()
 
     def set_personal_token(self, personal_token):
         self.headers["Authorization"] = f"Bearer {personal_token}"
@@ -48,6 +59,12 @@ class Trainer:
             names.append(study_i.get_name())
 
         return names
+
+    def set_side(self, choice):
+        if choice == 0:
+            self.side = 0
+        else:
+            self.side = 1
 
     def fetch_studies(self, username):
         '''
@@ -135,10 +152,15 @@ class Trainer:
         self.update_study(name) # Update the study here before setting it to crnt
 
         # Clean up
-        self.chapters_set = set()
-        self.side = 1
-        self.training_line = []
         self.study_game = None
+        self.chapters_set = set()
+        self.side = 0
+        self.training_line = []
+        self.move_index = 0
+        self.total_moves = 0
+        self.total_correct = 0
+        self.move_accuracy = 0.0
+        self.training_board = chess.Board()
 
         self.crnt_study = self.studies[index]
         for chapter_i in self.crnt_study.get_chapters():
@@ -190,32 +212,60 @@ class Trainer:
                 node_ptr = random.choice(list_cont)
                 self.training_line.append(node_ptr.move)
             self.delete_variation(node_ptr)
+            self.move_index = 0
+            self.training_board = chess.Board()
 
-            # TODO testing features
-            board = chess.Board()
-            for move in self.training_line:
-                board.push(move)
-
+        # Now return the board for next position, also check if there're still moves left
+        # self.move_index will be updated
+        if self.move_index >= len(self.training_line):
+            # Means this line has been done
             self.training_line = []
-            return board
+            # self.training_board = chess.Board()
+            # self.move_index = 0
+            return self.get_position() # Get the next line
 
+        if self.move_index % 2 != self.side: # This check is critical when starting
+            self.training_board.push(self.training_line[self.move_index])
+            self.move_index += 1
 
-        
+        return self.training_board
 
-    def display_lines(self, pgn):
-        game = chess.pgn.read_game(io.StringIO(pgn))
-        if game:
-            board = game.board()
-            print('Mainline')
-            for move in game.mainline_moves():
-                board.push(move)
-                print(board)
-                print()
-            print('Sidelines')
-            side_cnt = 0
-            for sideline in game.variations:
-                side_cnt = side_cnt + 1
-                print(f'sideline {side_cnt}')
-                print(sideline)
+    def answer(self, move):
+        '''
+        Check if the move provided by user is correct, and update self.training_line, 
+        self.training_board, self.move_index accordingly. The parameter passed in is
+        in uci format.
+        Return True / False 
+        '''
+
+        self.total_moves += 1
+
+        if self.training_line[self.move_index] == move:
+            self.training_board.push(self.training_line[self.move_index])
+            self.move_index += 1
+            self.total_correct += 1
+            self.move_accuracy = self.total_correct / self.total_moves
+            return True
         else:
-            return None
+            self.move_accuracy = self.total_correct / self.total_moves
+            return False
+        
+    def training(self):
+        '''
+        Main training function.
+        '''
+        self.set_side(int(input("Pick your side for training (0 for white, 1 for black): ")))
+
+        board = self.get_position()
+        while board != None:
+            if self.side == 0:
+                print(board.unicode())
+            else:
+                print(board.transform(chess.flip_vertical).transform(chess.flip_horizontal).unicode())
+            result = self.answer(chess.Move.from_uci(input("Move: ")))
+            print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
+            while not result:
+                result = self.answer(chess.Move.from_uci(input("Move: ")))
+                print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
+            board = self.get_position()
+
