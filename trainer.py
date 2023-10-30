@@ -16,6 +16,7 @@ class Trainer:
         study_ind           : dictionary, mappings between study name and index in studies
         crnt_study          : Study object, the study that is being worked on
         chapters_set        : set, a set containing all the chapters in crnt_study that hasn't been worked on
+        side                : int, the side to train on. 0 = black, 1 = white
         study_game          : chess.pgn.Game, the game that is currently being worked on   
     '''
 
@@ -32,9 +33,18 @@ class Trainer:
         self.crnt_study = None
         self.study_game = None
         self.chapters_set = set()
+        self.side = 1
 
     def set_personal_token(self, personal_token):
         self.headers["Authorization"] = f"Bearer {personal_token}"
+
+
+    def list_study_names(self):
+        names = []
+        for study_i in self.studies:
+            names.append(study_i.get_name())
+
+        return names
 
     def fetch_studies(self, username):
         '''
@@ -93,23 +103,14 @@ class Trainer:
                     raw_pgn = response.text
                     # Split the raw PGN into individual games
                     pgn_games = re.split(r'\n\n\n', raw_pgn)[:-1]
-                    # pgn_info = []
-                    # pgn_moves = []
-                    # for pgn_game in pgn_games:
-                    #     temp = pgn_game.split('\n\n')
-                    #     pgn_info.append(temp[0])
-                    #     pgn_moves.append(temp[-1])
-                    # return pgn_info, pgn_moves
-
                     study_i.clear_chapters()
                     for pgn_i in pgn_games:
+                        # Here we assume all chapters have a name (in Event field)
+                        # TODO: Grabing the Event can also be done with chess.pgn.read_headers
                         pattern = r'\[Event "(.*?)"\]'
                         match = re.search(pattern, pgn_i)
-                        if match:
-                            event_name = match.group(1)
-                            new_chapter = Chapter(pgn_i, event_name)
-                        else:
-                            new_chapter = Chapter(pgn_i, "Unknown")
+                        event_name = match.group(1)
+                        new_chapter = Chapter(pgn_i, event_name)
                         study_i.add_chapter(new_chapter)
 
                     return study_i.total_chapters()
@@ -117,16 +118,10 @@ class Trainer:
                 else:
                     return None
 
-    def list_study_names(self):
-        names = []
-        for study_i in self.studies:
-            names.append(study_i.get_name())
-
-        return names
-
     def set_crnt_study(self, name):
         '''
         Set the current study by its name, update self.crnt_study.
+        Set self.chapters_set.
         Return the index of this study in self.studies.
         Return None if this study doesn't exist.
         '''
@@ -139,8 +134,42 @@ class Trainer:
         self.crnt_study = self.studies[index]
         for chapter_i in self.crnt_study.get_chapters():
             self.chapters_set.add(chapter_i)
-            print(chapter_i.get_name())
         return index
+
+
+    def delete_variation(self, node):
+        par_node = node.parent
+        if par_node == None:
+            return
+        par_node.remove_variation(node)
+        if par_node.is_end():
+            self.delete_variation(par_node)
+        return
+
+    def get_position(self):
+        '''
+        Get the next position to work on.
+        If the study_game is empty, update it with a new chapter. 
+        Whenever a study_game is out of move, reset it to None.
+        Return a Board.
+        Return None if no more chapter available.
+        '''
+
+        if self.study_game == None: # Fetch a new chapter to study
+            if len(self.chapters_set) == 0:
+                return None # Training is done!
+            next_chapter = self.chapters_set.pop()
+            self.study_game = chess.pgn.read_game(io.StringIO(next_chapter.get_pgn()))
+
+        game2 = self.study_game.end()
+        print(game2.board())
+
+        self.delete_variation(game2)
+
+        board = self.study_game.board()
+        for move in self.study_game.mainline_moves():
+            board.push(move)
+        return board
 
     def display_lines(self, pgn):
         game = chess.pgn.read_game(io.StringIO(pgn))

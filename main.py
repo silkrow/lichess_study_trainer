@@ -15,13 +15,5 @@ print(study_list_result)
 names = trainer.list_study_names()
 print(names)
 
-print(trainer.set_crnt_study("[Repertoire] Accelerated Dragon"))
-
-# print("Information Parts:")
-# print(info_parts)
-# print("\nPGN Moves:")
-# print(pgn_moves)
-
-# # Analyze and display the board for the first game in the study
-# if pgn_moves:
-#     board = study.display_lines(pgn_moves[0])
+trainer.set_crnt_study("[Repertoire] Accelerated Dragon")
+print(trainer.get_position())
