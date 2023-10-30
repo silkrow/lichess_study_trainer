@@ -3,6 +3,7 @@ import re
 import chess.pgn
 import io
 import json
+import random
 
 from study import Study
 from chapter import Chapter
@@ -17,7 +18,8 @@ class Trainer:
         crnt_study          : Study object, the study that is being worked on
         chapters_set        : set, a set containing all the chapters in crnt_study that hasn't been worked on
         side                : int, the side to train on. 0 = black, 1 = white
-        study_game          : chess.pgn.Game, the game that is currently being worked on   
+        study_game          : chess.pgn.Game, the game that is currently being worked on 
+        training_line       : list of moves, the line that is being worked on
     '''
 
     def __init__(self, personal_token=None):
@@ -34,6 +36,7 @@ class Trainer:
         self.study_game = None
         self.chapters_set = set()
         self.side = 1
+        self.training_line = []
 
     def set_personal_token(self, personal_token):
         self.headers["Authorization"] = f"Bearer {personal_token}"
@@ -131,6 +134,12 @@ class Trainer:
 
         self.update_study(name) # Update the study here before setting it to crnt
 
+        # Clean up
+        self.chapters_set = set()
+        self.side = 1
+        self.training_line = []
+        self.study_game = None
+
         self.crnt_study = self.studies[index]
         for chapter_i in self.crnt_study.get_chapters():
             self.chapters_set.add(chapter_i)
@@ -138,8 +147,15 @@ class Trainer:
 
 
     def delete_variation(self, node):
+        '''
+        Recursively delete the parent nodes of a given node, until the parent node has 
+        more than one child.
+        Set self.study_game to None if the node is root.
+        '''
         par_node = node.parent
         if par_node == None:
+            # Now we're at the root
+            self.study_game = None
             return
         par_node.remove_variation(node)
         if par_node.is_end():
@@ -155,21 +171,36 @@ class Trainer:
         Return None if no more chapter available.
         '''
 
-        if self.study_game == None: # Fetch a new chapter to study
-            if len(self.chapters_set) == 0:
-                return None # Training is done!
-            next_chapter = self.chapters_set.pop()
-            self.study_game = chess.pgn.read_game(io.StringIO(next_chapter.get_pgn()))
+        # Check if the current line has been fully trained
+        if len(self.training_line) == 0:
+            if self.study_game == None: 
+                # Fetch a new chapter to study if the last one runs out
+                if len(self.chapters_set) == 0:
+                    return None # Training is done!
+            
+                # next_chapter = self.chapters_set.pop()
+                next_chapter = random.choice(list(self.chapters_set))
+                self.chapters_set.remove(next_chapter)
+                self.study_game = chess.pgn.read_game(io.StringIO(next_chapter.get_pgn()))
+            
+            # Randomly pick a line to train, store it in self.training_line, delete it from the study_game
+            node_ptr = self.study_game
+            while not node_ptr.is_end():
+                list_cont = node_ptr.variations;
+                node_ptr = random.choice(list_cont)
+                self.training_line.append(node_ptr.move)
+            self.delete_variation(node_ptr)
 
-        game2 = self.study_game.end()
-        print(game2.board())
+            # TODO testing features
+            board = chess.Board()
+            for move in self.training_line:
+                board.push(move)
 
-        self.delete_variation(game2)
+            self.training_line = []
+            return board
 
-        board = self.study_game.board()
-        for move in self.study_game.mainline_moves():
-            board.push(move)
-        return board
+
+        
 
     def display_lines(self, pgn):
         game = chess.pgn.read_game(io.StringIO(pgn))

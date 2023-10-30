@@ -16,4 +16,9 @@ names = trainer.list_study_names()
 print(names)
 
 trainer.set_crnt_study("[Repertoire] Accelerated Dragon")
-print(trainer.get_position())
+
+board = trainer.get_position()
+while board:
+    print(board)
+    print()
+    board = trainer.get_position()
