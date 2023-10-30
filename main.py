@@ -15,10 +15,13 @@ print(study_list_result)
 names = trainer.list_study_names()
 print(names)
 
-trainer.set_crnt_study("[Repertoire] Accelerated Dragon")
+# trainer.set_crnt_study("[Repertoire] Accelerated Dragon")
+trainer.set_crnt_study("[Repertoire] Sicilian Sidelines")
 
 board = trainer.get_position()
+i = 0
 while board:
+    i += 1
+    print(i)
     print(board)
-    print()
     board = trainer.get_position()
