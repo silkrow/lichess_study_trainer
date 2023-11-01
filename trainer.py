@@ -4,6 +4,8 @@ import chess.pgn
 import io
 import json
 import random
+import os
+import platform
 
 from study import Study
 from chapter import Chapter
@@ -249,6 +251,17 @@ class Trainer:
         else:
             self.move_accuracy = self.total_correct / self.total_moves
             return False
+
+    def clear_screen(self):
+        if platform.system() == 'Linux' or platform.system() == 'Darwin':
+            os.system('clear')  # For Linux/macOS
+        elif platform.system() == 'Windows':
+            os.system('cls')   # For Windows
+
+    def clear_lines(self, num_lines):
+        # Use ANSI escape codes to clear the specified number of lines
+        for _ in range(num_lines):
+            print("\x1b[1A\x1b[2K", end='')
         
     def training(self):
         '''
@@ -258,14 +271,16 @@ class Trainer:
 
         board = self.get_position()
         while board != None:
+            self.clear_screen()
             if self.side == 0:
                 print(board.unicode())
             else:
                 print(board.transform(chess.flip_vertical).transform(chess.flip_horizontal).unicode())
-            result = self.answer(chess.Move.from_uci(input("Move: ")))
             print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
+            result = self.answer(chess.Move.from_uci(input("Move: ")))
             while not result:
-                result = self.answer(chess.Move.from_uci(input("Move: ")))
+                self.clear_lines(2)
                 print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
+                result = self.answer(chess.Move.from_uci(input("Move: ")))
             board = self.get_position()
 
