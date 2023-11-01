@@ -18,12 +18,4 @@ print(names)
 # trainer.set_crnt_study("[Repertoire] Accelerated Dragon")
 trainer.set_crnt_study("[Repertoire] Sicilian Sidelines")
 
-# board = trainer.get_position()
-# i = 0
-# while board:
-#     i += 1
-#     print(i)
-#     print(board)
-#     board = trainer.get_position()
-
 trainer.training()
