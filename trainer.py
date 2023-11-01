@@ -262,6 +262,79 @@ class Trainer:
         # Use ANSI escape codes to clear the specified number of lines
         for _ in range(num_lines):
             print("\x1b[1A\x1b[2K", end='')
+
+    def print_board(self, board):
+        UNICODE_PIECE_SYMBOLS = {
+            "r": "♜",
+            "n": "♞",
+            "b": "♝",
+            "q": "♛",
+            "k": "♚",
+            "p": "♙",
+        }
+
+        def colored(text, text_color, background_color):
+            return f"\x1b[38;5;{text_color}m\x1b[48;5;{background_color}m{text}\x1b[0m"
+
+        print("   a b c d e f g h")
+        for rank in range(7, -1, -1):
+            row = []
+            for file in range(8):
+                square = chess.square(file, rank)
+                piece = board.piece_at(square)
+                square_color = 165 if (rank + file) % 2 == 0 else 124
+                piece_color = 231
+                if piece == None:
+                    piece_symbol = " "
+                else:
+                    piece_symbol = UNICODE_PIECE_SYMBOLS.get(piece.symbol().lower())
+                    if piece.symbol().islower():
+                        piece_color = 16
+                square_content = colored(piece_symbol, piece_color, square_color)
+                row.append(square_content)
+            print(f"{rank + 1} {' '.join(row)} {rank + 1}")
+
+        print("   a b c d e f g h")
+
+    # def print_board(self, board):
+    #     UNICODE_PIECE_SYMBOLS = {
+    #         "r": "♜",
+    #         "n": "♞",
+    #         "b": "♝",
+    #         "q": "♛",
+    #         "k": "♚",
+    #         "p": "♙",
+    #     }
+
+    #     def colored(text, text_color, background_color):
+    #         return f"\x1b[38;5;{text_color}m\x1b[48;5;{background_color}m{text}\x1b[0m"
+
+    #     # Use a block character for squares
+    #     square_character = "█"
+
+    #     print("   a b c d e f g h")
+    #     for rank in range(7, -1, -1):
+    #         row = []
+    #         for file in range(8):
+    #             square = chess.square(file, rank)
+    #             piece = board.piece_at(square)
+    #             square_color = 165 if (rank + file) % 2 == 0 else 124
+    #             piece_color = 231
+    #             if piece == None:
+    #                 piece_symbol = " "
+    #             else:
+    #                 piece_symbol = UNICODE_PIECE_SYMBOLS.get(piece.symbol().lower())
+    #                 if piece.symbol().islower():
+    #                     piece_color = 16
+    #             square_content = colored(piece_symbol + " ", piece_color, square_color)  # Piece with an extra space
+    #             row.append(square_content)
+    #         print(f"{rank + 1} {' '.join(row)} {rank + 1}")
+
+    #     print("   a b c d e f g h")
+
+
+        
+
         
     def training(self):
         '''
@@ -273,9 +346,11 @@ class Trainer:
         while board != None:
             self.clear_screen()
             if self.side == 0:
-                print(board.unicode())
+                # print(board.unicode())
+                self.print_board(board)
             else:
-                print(board.transform(chess.flip_vertical).transform(chess.flip_horizontal).unicode())
+                # print(board.transform(chess.flip_vertical).transform(chess.flip_horizontal).unicode())
+                self.print_board(board.transform(chess.flip_vertical).transform(chess.flip_horizontal))
             print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
             result = self.answer(chess.Move.from_uci(input("Move: ")))
             while not result:
