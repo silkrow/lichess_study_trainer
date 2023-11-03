@@ -290,7 +290,7 @@ class Trainer:
                 for file in range(8):
                     square = chess.square(file, rank)
                     piece = board.piece_at(square)
-                    square_color = 165 if (rank + file) % 2 == 0 else 124
+                    square_color = 214 if (rank + file) % 2 == 0 else 94
                     piece_color = 231
                     if piece == None:
                         piece_symbol = " "
@@ -334,16 +334,21 @@ class Trainer:
         while board != None:
             self.clear_screen()
             if self.side == 0:
-                # print(board.unicode())
                 self.print_board(board)
             else:
-                # print(board.transform(chess.flip_vertical).transform(chess.flip_horizontal).unicode())
                 self.print_board(board.transform(chess.flip_vertical).transform(chess.flip_horizontal))
             print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
-            result = self.answer(chess.Move.from_uci(input("Move: ")))
+            ans = input("Move: ")
+            if re.match(r'^[a-h][1-8][a-h][1-8]$', ans):
+                result = self.answer(chess.Move.from_uci(ans))
+            else:
+                result = self.answer(board.parse_san(ans))
             while not result:
                 self.clear_lines(2)
                 print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
-                result = self.answer(chess.Move.from_uci(input("Move: ")))
+                ans = input("Move: ")
+                if re.match(r'^[a-h][1-8][a-h][1-8]$', ans):
+                    result = self.answer(chess.Move.from_uci(ans))
+                else:
+                    result = self.answer(board.parse_san(ans))
             board = self.get_position()
-
