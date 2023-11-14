@@ -3,10 +3,13 @@ from trainer import Trainer
 # Example usage:
 trainer = Trainer()  # Initialize without a token
 # Authenticate later using a personal access token
-with open("lichess_token.txt", "r") as file:
-    token = file.read()
-    token = token.split()[0]
-    trainer.set_personal_token(token)
+try:
+    with open("lichess_token.txt", "r") as file:
+        token = file.read()
+        token = token.split()[0]
+        trainer.set_personal_token(token)
+except FileNotFoundError:
+    pass
 
 # Ask the user for inputs interactively
 valid_username = input("Enter a valid Lichess username: ")
