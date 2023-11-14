@@ -21,6 +21,7 @@ class Trainer:
         studies             : list of Study objects, candidates for training
         study_ind           : dictionary, mappings between study name and index in studies
         crnt_study          : Study object, the study that is being worked on
+        crnt_chapter		: Chapter object, the chapter that is being worked on
         chapters_set        : set, a set containing all the chapters in crnt_study that hasn't been worked on
         side                : int, the side to train on. 0 = white, 1 = black
         study_game          : chess.pgn.Game, the game that is currently being worked on 
@@ -207,6 +208,7 @@ class Trainer:
             
                 # next_chapter = self.chapters_set.pop()
                 next_chapter = random.choice(list(self.chapters_set))
+                self.crnt_chapter = next_chapter
                 self.chapters_set.remove(next_chapter)
                 self.study_game = chess.pgn.read_game(io.StringIO(next_chapter.get_pgn()))
             
@@ -337,6 +339,8 @@ class Trainer:
                 self.print_board(board)
             else:
                 self.print_board(board.transform(chess.flip_vertical).transform(chess.flip_horizontal))
+            print(f"Study: {self.crnt_study.get_name()}")
+            print(f"Chapter: {self.crnt_chapter.get_name()}")
             print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
             ans = input("Move: ")
             if re.match(r'^[a-h][1-8][a-h][1-8]$', ans):
@@ -347,7 +351,9 @@ class Trainer:
                 except ValueError as e:
                     result = None
             while not result:
-                self.clear_lines(2)
+                self.clear_lines(4) # Clear lines, number depends on the info printed below
+                print(f"Study: {self.crnt_study.get_name()}")
+                print(f"Chapter: {self.crnt_chapter.get_name()}")
                 print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
                 ans = input("Move: ")
                 if re.match(r'^[a-h][1-8][a-h][1-8]$', ans):
