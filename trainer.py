@@ -342,7 +342,10 @@ class Trainer:
             if re.match(r'^[a-h][1-8][a-h][1-8]$', ans):
                 result = self.answer(chess.Move.from_uci(ans))
             else:
-                result = self.answer(board.parse_san(ans))
+                try:
+                    result = self.answer(board.parse_san(ans))
+                except ValueError as e:
+                    result = None
             while not result:
                 self.clear_lines(2)
                 print(f"total moves: {self.total_moves}, accuracy: {self.move_accuracy * 100:.2f}%")
@@ -350,5 +353,8 @@ class Trainer:
                 if re.match(r'^[a-h][1-8][a-h][1-8]$', ans):
                     result = self.answer(chess.Move.from_uci(ans))
                 else:
-                    result = self.answer(board.parse_san(ans))
+                    try:
+                        result = self.answer(board.parse_san(ans))
+                    except ValueError as e:
+                        result = None
             board = self.get_position()
